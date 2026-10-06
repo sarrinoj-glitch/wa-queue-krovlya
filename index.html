@@ -139,9 +139,40 @@ select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg
 .status-label { font-size: 13px; color: var(--muted); }
 .lead.opened[data-status=""] .status-label { color: var(--warn); font-weight: 600; }
 .st { font: inherit; font-size: 13px; cursor: pointer; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; }
-.lead[data-status="sent"] .st[data-st="sent"] { background: var(--sent-soft); border-color: var(--sent); color: var(--sent); font-weight: 600; }
-.lead[data-status="replied"] .st[data-st="replied"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
-.lead[data-status="stop"] .st[data-st="stop"] { background: var(--stop-soft); border-color: var(--stop); color: var(--stop); font-weight: 600; }
+/* stage tones: one colour language for the stage chips and the stage tag in the card head */
+.st[aria-pressed="true"] { font-weight: 600; }
+.st[aria-pressed="true"][data-tone="sent"], .tag.stage[data-tone="sent"] { background: var(--sent-soft); border-color: var(--sent); color: var(--sent); }
+.st[aria-pressed="true"][data-tone="ok"], .tag.stage[data-tone="ok"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.st[aria-pressed="true"][data-tone="warn"], .tag.stage[data-tone="warn"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.st[aria-pressed="true"][data-tone="stop"], .tag.stage[data-tone="stop"] { background: var(--stop-soft); border-color: var(--stop); color: var(--stop); }
+.st[aria-pressed="true"][data-tone="win"], .tag.stage[data-tone="win"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tag.stage { font-weight: 600; }
+
+/* send / funnel switch */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+.mode { font: inherit; font-weight: 600; cursor: pointer; color: var(--muted); background: transparent; border: 0; border-radius: 7px; padding: 9px 12px; }
+.mode b { font-family: var(--font-data); font-weight: 400; margin-left: 6px; }
+.mode[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.due-link { font: inherit; font-weight: 600; cursor: pointer; color: var(--warn); background: var(--warn-soft); border: 0; border-radius: 999px; padding: 2px 12px; }
+.due-link b { font-family: var(--font-data); }
+input[type="search"], input[type="datetime-local"] {
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px;
+}
+input[type="search"] { width: 100%; background: var(--surface); }
+input[type="datetime-local"] { font-family: var(--font-data); font-size: 13px; max-width: 100%; }
+
+/* funnel block inside a card */
+.crm { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+.crm-row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.crm-label { flex-basis: 100%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+textarea.note { min-height: 0; max-width: 68ch; }
+.due { font-size: 13px; font-weight: 600; color: var(--muted); }
+.due[data-tone="warn"] { color: var(--warn); }
+.due[data-tone="stop"] { color: var(--stop); }
+.hist { margin: 0; font-size: 13px; color: var(--muted); }
+.data-body { padding: 4px 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.data-body p { margin: 0; color: var(--muted); font-size: 13px; max-width: 68ch; }
 .empty { margin: 0; padding: 28px 14px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; }
 .foot { color: var(--muted); font-size: 13px; margin: 0; max-width: 68ch; }
 @media (max-width: 520px) {
@@ -155,13 +186,14 @@ select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg
 <div class="wrap">
   <header>
     <h1>WhatsApp-очередь кровельщиков</h1>
-    <p class="lede"><span id="total"></span> кровельных компаний из 2ГИС в двух пачках. Кнопка открывает чат с готовым текстом, отправляешь его сам.</p>
+    <p class="lede"><span id="total"></span> кровельных компаний из 2ГИС в двух пачках. В «Рассылке» кнопка открывает чат с готовым текстом, отправляешь его сам. В «Воронке» лежат все, кому уже написал: этап, дата следующего контакта и заметка.</p>
+    <p class="totals">В очереди <b id="c-queue">0</b> · написал <b id="c-sent">0</b> · ответили <b id="c-replied">0</b> · дошли до созвона <b id="c-calls">0</b> · клиентов <b id="c-won">0</b></p>
   </header>
 
   <section class="meter" id="meter" aria-live="polite">
     <div class="meter-row">
       <span class="today">Сегодня отмечено отправленных: <b id="today">0</b> из <b id="limit-view">15</b></span>
-      <span class="totals">По обеим пачкам: в очереди <b id="c-queue">0</b> · отправлено <b id="c-sent">0</b> · ответили <b id="c-replied">0</b></span>
+      <button class="due-link" id="due-link" type="button" hidden>Дела на сегодня: <b id="c-due">0</b></button>
     </div>
     <div class="bar"><i id="bar"></i></div>
     <p class="limit-note" id="limit-note" hidden>Дневной лимит выбран. Остальное лучше отправить завтра.</p>
@@ -190,6 +222,25 @@ select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg
     </div>
   </details>
 
+  <details class="settings" id="data">
+    <summary>Копия отметок и выгрузка</summary>
+    <div class="data-body">
+      <p>Отметки лежат в этом браузере. Копия нужна, чтобы не потерять их при очистке браузера и чтобы перенести с телефона на компьютер: скачай файл на одном устройстве и загрузи на другом.</p>
+      <div class="actions">
+        <button class="btn" type="button" id="data-export">Скачать копию</button>
+        <button class="btn" type="button" id="data-import">Загрузить копию</button>
+        <button class="btn" type="button" id="data-csv">Выгрузить воронку в таблицу</button>
+        <input type="file" id="data-file" accept="application/json,.json" hidden>
+      </div>
+      <p id="data-note" aria-live="polite"></p>
+    </div>
+  </details>
+
+  <div class="modes" id="modes" role="group" aria-label="Раздел">
+    <button class="mode" data-mode="send" type="button">Рассылка</button>
+    <button class="mode" data-mode="crm" type="button">Воронка<b id="m-crm"></b></button>
+  </div>
+
   <div class="batches" id="batches" role="group" aria-label="Пачка лидов">
     <button class="batch" data-batch="1" type="button"><strong>Пачка 1 · Краснодар и край</strong><span>в очереди <b id="b1-queue"></b> из <b id="b1-all"></b></span></button>
     <button class="batch" data-batch="2" type="button"><strong>Пачка 2 · другие города</strong><span>в очереди <b id="b2-queue"></b> из <b id="b2-all"></b></span></button>
@@ -198,11 +249,22 @@ select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg
   <nav class="filters" aria-label="Фильтры">
     <div class="tabs" id="tabs">
       <button class="tab" data-tab="queue" type="button">Очередь<b id="t-queue"></b></button>
-      <button class="tab" data-tab="sent" type="button">Отправлено<b id="t-sent"></b></button>
-      <button class="tab" data-tab="replied" type="button">Ответили<b id="t-replied"></b></button>
+      <button class="tab" data-tab="sent" type="button">Уже написал<b id="t-sent"></b></button>
       <button class="tab" data-tab="stop" type="button">Не писать<b id="t-stop"></b></button>
       <button class="tab" data-tab="all" type="button">Все<b id="t-all"></b></button>
     </div>
+    <div class="tabs" id="ctabs" hidden>
+      <button class="tab" data-tab="today" type="button">Дела на сегодня<b id="ct-today"></b></button>
+      <button class="tab" data-tab="replied" type="button">Ответил<b id="ct-replied"></b></button>
+      <button class="tab" data-tab="work" type="button">Доработать<b id="ct-work"></b></button>
+      <button class="tab" data-tab="callback" type="button">Перезвонить<b id="ct-callback"></b></button>
+      <button class="tab" data-tab="call" type="button">Созвон<b id="ct-call"></b></button>
+      <button class="tab" data-tab="won" type="button">Клиент<b id="ct-won"></b></button>
+      <button class="tab" data-tab="lost" type="button">Отказ<b id="ct-lost"></b></button>
+      <button class="tab" data-tab="sent" type="button">Отправлено, ждём<b id="ct-sent"></b></button>
+      <button class="tab" data-tab="allc" type="button">Все в воронке<b id="ct-allc"></b></button>
+    </div>
+    <input type="search" id="q" placeholder="Найти по названию, городу, телефону или заметке" aria-label="Поиск по лидам" autocomplete="off">
     <div class="flags" id="flags">
       <button class="flag" data-flag="krd" id="flag-krd" type="button">Только Краснодар и пригороды</button>
       <select id="set-region" aria-label="Регион пачки 2"></select>
@@ -215,7 +277,7 @@ select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg
   <ol class="queue" id="queue"></ol>
   <p class="empty" id="empty" hidden>В этом разделе пока пусто.</p>
 
-  <p class="foot">Отметки хранятся в браузере на этом устройстве: на телефоне и на компьютере они разные. Страница не знает, ушло ли сообщение, поэтому «Отправлено» отмечаешь сам.</p>
+  <p class="foot">Отметки хранятся в браузере на этом устройстве: на телефоне и на компьютере они разные, переносятся через «Копия отметок и выгрузка». Страница не знает, ушло ли сообщение, поэтому «Отправлено» отмечаешь сам.</p>
 </div>
 
 <script>
@@ -248,8 +310,29 @@ const SITE_LATER = 'Могу за вечер собрать вариант по�
 const PENDING = 'Сообщение появится, когда впишешь, что не так на их сайте.';
 
 const S = { name: '', demo: false, optout: true, target: 'wa', limit: 15, st: {}, fact: {}, ovr: {},
-            tab: 'queue', batch: 1, region: '', krd: false, nosite: false, confirmed: false, notrade: false };
+            tab: 'queue', batch: 1, region: '', krd: false, nosite: false, confirmed: false, notrade: false,
+            mode: 'send', ctab: 'today' };
 try { const raw = localStorage.getItem(KEY); if (raw) Object.assign(S, JSON.parse(raw)); } catch (e) {}
+if (!['queue', 'sent', 'stop', 'all'].includes(S.tab)) S.tab = 'queue';   // «Ответили» переехали в воронку
+
+// Воронка. Запись лида в S.st[телефон]: s — этап, sentAt — когда написал, sAt — когда сменился этап,
+// next — следующий контакт ('ГГГГ-ММ-ДДTЧЧ:ММ'), note — заметка, hadCall — доходил до созвона, upd — последняя правка.
+const STAGES = [
+  { id: 'sent',     label: 'Отправлено',  tone: 'sent' },
+  { id: 'replied',  label: 'Ответил',     tone: 'ok' },
+  { id: 'work',     label: 'Доработать',  tone: 'warn' },
+  { id: 'callback', label: 'Перезвонить', tone: 'warn', date: true },
+  { id: 'call',     label: 'Созвон',      tone: 'ok',   date: true },
+  { id: 'won',      label: 'Клиент',      tone: 'win' },
+  { id: 'lost',     label: 'Отказ',       tone: 'stop' },
+  { id: 'stop',     label: 'Не писать',   tone: 'stop' }
+];
+const STAGE = Object.fromEntries(STAGES.map((x) => [x.id, x]));
+const OPEN = ['sent', 'replied', 'work', 'callback', 'call'];                 // лид ещё в работе, ему можно назначить дату
+const ANSWERED = ['replied', 'work', 'callback', 'call', 'won', 'lost'];
+const pin = new Set();   // карточки, которые остаются на экране после смены этапа, пока не сменишь вкладку
+let Q = '';
+let sorted = false;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
 const $ = (id) => document.getElementById(id);
@@ -285,26 +368,88 @@ function chatLink(p, text) {
   const q = encodeURIComponent(text);
   return S.target === 'web' ? 'https://web.whatsapp.com/send?phone=' + p + '&text=' + q : 'https://wa.me/' + p + '?text=' + q;
 }
-const statusOf = (p) => (S.st[p] ? S.st[p].s : '');
+const chatOnly = (p) => (S.target === 'web' ? 'https://web.whatsapp.com/send?phone=' + p : 'https://wa.me/' + p);
+const statusOf = (p) => (S.st[p] && STAGE[S.st[p].s] ? S.st[p].s : '');
+
+const pad = (n) => String(n).padStart(2, '0');
+const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+const shortDate = (t) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '');
+function dueInfo(r) {
+  if (!OPEN.includes(r.s)) return null;
+  if (!r.next) return STAGE[r.s].date ? { text: 'дата не указана', tone: 'warn' } : null;
+  const d = new Date(r.next);
+  if (isNaN(d)) return null;
+  const days = Math.round((dayStart(d) - dayStart(new Date())) / 86400000);
+  const time = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  if (days < 0) return { text: 'просрочено: было ' + shortDate(d) + ' в ' + time, tone: 'stop' };
+  if (days === 0) return { text: 'сегодня в ' + time, tone: 'warn' };
+  if (days === 1) return { text: 'завтра в ' + time, tone: 'plain' };
+  return { text: shortDate(d) + ' в ' + time, tone: 'plain' };
+}
+function isDue(p) {
+  const r = S.st[p];
+  if (!r || !r.next || !OPEN.includes(r.s)) return false;
+  const d = new Date(r.next);
+  return !isNaN(d) && dayStart(d) <= dayStart(new Date());
+}
+// порядок в воронке: сначала с датой (ближайшие и просроченные сверху), потом без даты — кому раньше написал
+function sortKey(p) {
+  const r = S.st[p] || {};
+  if (r.next && OPEN.includes(r.s)) { const t = new Date(r.next).getTime(); if (!isNaN(t)) return t; }
+  return 1e13 + (r.sentAt || r.sAt || 0);
+}
+
+function crmHtml(lead, r) {
+  const due = dueInfo(r);
+  const chips = STAGES.map((x) => '<button class="st" type="button" data-st="' + x.id + '" data-tone="' + x.tone + '" aria-pressed="' + (x.id === r.s) + '">' + x.label + '</button>').join('');
+  const day = (n, label) => '<button class="st" type="button" data-act="day" data-days="' + n + '">' + label + '</button>';
+  const when = OPEN.includes(r.s) ? (
+    '<div class="crm-row"><label class="crm-label" for="next-' + lead.p + '">Следующий контакт</label>' +
+      '<input type="datetime-local" class="next" id="next-' + lead.p + '" value="' + esc(r.next || '') + '">' +
+      day(0, 'сегодня') + day(1, 'завтра') + day(3, 'через 3 дня') + day(7, 'через неделю') + (r.next ? day('', 'убрать дату') : '') +
+      (due ? '<span class="due" data-tone="' + due.tone + '">' + esc(due.text) + '</span>' : '') +
+    '</div>'
+  ) : '';
+  const hist = [r.sentAt ? 'написал ' + shortDate(r.sentAt) : '', r.sAt ? 'этап с ' + shortDate(r.sAt) : ''].filter(Boolean).join(' · ');
+  return '<div class="crm">' +
+    '<div class="crm-row"><span class="crm-label">Этап</span>' + chips + '</div>' +
+    when +
+    '<div class="crm-row"><label class="crm-label" for="note-' + lead.p + '">Заметка</label>' +
+      '<textarea class="note" id="note-' + lead.p + '" rows="2" placeholder="О чём договорились, что показать, какие возражения">' + esc(r.note || '') + '</textarea></div>' +
+    '<div class="actions">' +
+      '<a class="btn primary" target="_blank" rel="noopener" href="' + chatOnly(lead.p) + '">Открыть чат</a>' +
+      '<a class="btn" href="tel:+' + lead.p + '">Позвонить</a>' +
+      '<button class="btn" type="button" data-act="requeue">Вернуть в очередь</button>' +
+      '<span class="phone">+' + lead.p + '</span></div>' +
+    (hist ? '<p class="hist">' + hist + '</p>' : '') +
+  '</div>';
+}
 
 function rowHtml(lead) {
   const i = byPhone.get(lead.p).i;
+  const st = statusOf(lead.p);
+  const r = S.st[lead.p];
   const reviews = lead.k ? '★ ' + esc(lead.r) + ' · отзывов: ' + lead.k : 'отзывов нет';
+  const due = st ? dueInfo(r) : null;
   const tags = [
+    st ? '<span class="tag stage" data-tone="' + STAGE[st].tone + '">' + STAGE[st].label + (due ? ' · ' + esc(due.text) : '') + '</span>' : '',
     '<span class="tag batch-tag">' + BATCH_TAG[lead.b] + '</span>',
     lead.s ? '<span class="tag">есть сайт</span>' : '<span class="tag good">без сайта</span>',
     lead.c ? '<span class="tag">WhatsApp в карточке</span>' : '<span class="tag care">мобильный, WhatsApp не подтверждён</span>',
     lead.t ? '<span class="tag care">похоже на магазин</span>' : ''
   ].join('');
+  const head = '<div class="lead-head"><span class="num">' + (i + 1) + '</span>' +
+      '<div class="who"><h2 class="name">' + esc(lead.n) + '</h2><p class="meta">' + esc(lead.city || 'Краснодарский край') + ' · ' + reviews + '</p></div>' +
+      '<div class="tags">' + tags + '</div></div>';
+  // лид уже в воронке: вместо первого сообщения — этап, дата и заметка
+  if (st) return '<li class="lead" id="lead-' + lead.p + '" data-p="' + lead.p + '" data-status="' + st + '">' + head + crmHtml(lead, r) + '</li>';
   const fact = lead.s ? (
     '<label class="field fact-field"><span>Что не так на сайте <a href="http://' + esc(lead.s) + '" target="_blank" rel="noopener">' + esc(lead.s) + '</a></span>' +
     '<input type="text" class="fact" id="fact-' + lead.p + '" autocomplete="off" placeholder="нет кнопки записи, не открывается прайс…" value="' + esc(S.fact[lead.p] || '') + '"></label>'
   ) : '';
   const editing = typeof S.ovr[lead.p] === 'string';
-  return '<li class="lead' + (editing ? ' editing' : '') + '" id="lead-' + lead.p + '" data-p="' + lead.p + '" data-status="' + statusOf(lead.p) + '">' +
-    '<div class="lead-head"><span class="num">' + (i + 1) + '</span>' +
-      '<div class="who"><h2 class="name">' + esc(lead.n) + '</h2><p class="meta">' + esc(lead.city || 'Краснодарский край') + ' · ' + reviews + '</p></div>' +
-      '<div class="tags">' + tags + '</div></div>' +
+  return '<li class="lead' + (editing ? ' editing' : '') + '" id="lead-' + lead.p + '" data-p="' + lead.p + '" data-status="">' +
+    head +
     fact +
     '<p class="msg"' + (editing ? ' hidden' : '') + '></p>' +
     '<textarea class="ovr" id="ovr-' + lead.p + '" aria-label="Свой текст сообщения"' + (editing ? '' : ' hidden') + '>' + esc(editing ? S.ovr[lead.p] : '') + '</textarea>' +
@@ -325,6 +470,7 @@ function refreshMsg(li) {
   const text = message(lead, i);
   const msg = li.querySelector('.msg');
   const a = li.querySelector('.open');
+  if (!msg) return;   // карточка в воронке: первого сообщения в ней нет
   msg.textContent = text || PENDING;
   msg.classList.toggle('pending', !text);
   if (text) {
@@ -340,11 +486,24 @@ function refreshMsg(li) {
 const rows = () => Array.from(document.querySelectorAll('.lead'));
 const refreshAll = () => rows().forEach(refreshMsg);
 
+function matches(lead) {
+  if (!Q) return true;
+  const r = S.st[lead.p];
+  return (lead.n + ' ' + (lead.city || '') + ' ' + lead.reg + ' ' + lead.p + ' ' + ((r && r.note) || '')).toLowerCase().includes(Q);
+}
 function visible(lead) {
+  if (pin.has(lead.p)) return true;
+  if (!matches(lead)) return false;
   const s = statusOf(lead.p);
+  if (S.mode === 'crm') {
+    if (!s) return false;
+    if (S.ctab === 'today') return isDue(lead.p);
+    return S.ctab === 'allc' || s === S.ctab;
+  }
   if (lead.b !== S.batch) return false;
   if (S.tab === 'queue' && s) return false;
-  if (S.tab !== 'queue' && S.tab !== 'all' && s !== S.tab) return false;
+  if (S.tab === 'sent' && (!s || s === 'stop')) return false;
+  if (S.tab === 'stop' && s !== 'stop') return false;
   if (S.batch === 1 && S.krd && !lead.l) return false;
   if (S.batch === 2 && S.region && lead.reg !== S.region) return false;
   if (S.nosite && lead.s) return false;
@@ -353,23 +512,56 @@ function visible(lead) {
   return true;
 }
 function applyFilters() {
-  let shown = 0;
+  const crm = S.mode === 'crm';
+  const list = $('queue');
+  const shown = [];
   rows().forEach((li) => {
     const ok = visible(byPhone.get(li.dataset.p).lead);
     li.hidden = !ok;
-    if (ok) shown++;
+    if (ok) shown.push(li);
   });
-  $('empty').hidden = shown > 0;
-  document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === S.tab)));
+  if (crm) {
+    shown.sort((a, b) => sortKey(a.dataset.p) - sortKey(b.dataset.p)).forEach((li) => list.appendChild(li));
+    sorted = true;
+  } else if (sorted) {
+    LEADS.forEach((l) => list.appendChild($('lead-' + l.p)));
+    sorted = false;
+  }
+  $('empty').hidden = shown.length > 0;
+  $('empty').textContent = Q ? 'По этому запросу никого нет.'
+    : !crm ? 'В этом разделе пока пусто.'
+    : S.ctab === 'today' ? 'На сегодня дел нет. Сюда попадают лиды, у которых дата следующего контакта — сегодня или раньше.'
+    : 'Здесь пока никого. Лид попадает сюда, когда отметишь у него этот этап.';
+  document.querySelectorAll('#tabs .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === S.tab)));
+  document.querySelectorAll('#ctabs .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === S.ctab)));
+  document.querySelectorAll('.mode').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === S.mode)));
   document.querySelectorAll('.flag').forEach((b) => b.setAttribute('aria-pressed', String(!!S[b.dataset.flag])));
   document.querySelectorAll('.batch').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.batch) === S.batch)));
+  $('batches').hidden = crm;
+  $('tabs').hidden = crm;
+  $('ctabs').hidden = !crm;
+  $('flags').hidden = crm;
   $('flag-krd').hidden = S.batch !== 1;
   $('set-region').hidden = S.batch !== 2;
 }
 function counters() {
-  const blank = () => ({ queue: 0, sent: 0, replied: 0, stop: 0, all: 0 });
+  const blank = () => ({ queue: 0, sent: 0, stop: 0, all: 0 });
   const per = { 1: blank(), 2: blank() };
-  LEADS.forEach((l) => { per[l.b][statusOf(l.p) || 'queue']++; per[l.b].all++; });
+  const stage = {};
+  STAGES.forEach((x) => { stage[x.id] = 0; });
+  let due = 0, answered = 0, calls = 0, inFunnel = 0, active = 0;
+  LEADS.forEach((l) => {
+    const s = statusOf(l.p);
+    const r = S.st[l.p];
+    per[l.b][!s ? 'queue' : s === 'stop' ? 'stop' : 'sent']++;
+    per[l.b].all++;
+    if (!s) return;
+    stage[s]++; inFunnel++;
+    if (isDue(l.p)) due++;
+    if (ANSWERED.includes(s)) answered++;
+    if (s === 'call' || r.hadCall) calls++;
+    if (['replied', 'work', 'callback', 'call'].includes(s)) active++;
+  });
   const n = per[S.batch];
   const sum = (k) => per[1][k] + per[2][k];
   const day = new Date().toDateString();
@@ -381,23 +573,114 @@ function counters() {
   $('meter').classList.toggle('full', today >= limit);
   $('limit-note').hidden = today < limit;
   $('c-queue').textContent = sum('queue');
-  $('c-sent').textContent = sum('sent') + sum('replied');
-  $('c-replied').textContent = sum('replied');
+  $('c-sent').textContent = sum('sent');
+  $('c-replied').textContent = answered;
+  $('c-calls').textContent = calls;
+  $('c-won').textContent = stage.won;
+  $('c-due').textContent = due;
+  $('due-link').hidden = due === 0;
+  $('m-crm').textContent = active || '';
   [1, 2].forEach((b) => { $('b' + b + '-queue').textContent = per[b].queue; $('b' + b + '-all').textContent = per[b].all; });
   $('t-queue').textContent = n.queue;
   $('t-sent').textContent = n.sent;
-  $('t-replied').textContent = n.replied;
   $('t-stop').textContent = n.stop;
   $('t-all').textContent = n.all;
+  $('ct-today').textContent = due;
+  ['replied', 'work', 'callback', 'call', 'won', 'lost', 'sent'].forEach((k) => { $('ct-' + k).textContent = stage[k]; });
+  $('ct-allc').textContent = inFunnel;
+}
+function rerender(p) {
+  $('lead-' + p).outerHTML = rowHtml(byPhone.get(p).lead);
+  const li = $('lead-' + p);
+  refreshMsg(li);
+  return li;
 }
 function setStatus(p, s) {
-  const cur = S.st[p];
-  if (cur && cur.s === s) delete S.st[p];
-  else S.st[p] = { s: s, sentAt: (cur && cur.sentAt) || (s === 'stop' ? null : Date.now()) };
+  const cur = S.st[p] || {};
+  if ((cur.s || '') === s) return;
+  const now = Date.now();
+  const rec = Object.assign({}, cur, { s: s, sAt: now, upd: now });
+  if (!s) { delete rec.sentAt; delete rec.sAt; }                      // вернули в очередь: считаем, что не писали
+  else if (s !== 'stop' && !rec.sentAt) rec.sentAt = now;
+  if (s === 'call') rec.hadCall = true;
+  if (!OPEN.includes(s)) delete rec.next;                             // у закрытого лида напоминаний нет
+  if (!s && !rec.note && !rec.hadCall) delete S.st[p]; else S.st[p] = rec;
   save();
-  $('lead-' + p).dataset.status = statusOf(p);
+  // в рассылке отмеченный лид сразу уходит из очереди; в остальных случаях карточка остаётся, чтобы дописать дату и заметку
+  if (S.mode === 'crm' || !['sent', 'stop'].includes(s)) pin.add(p);
+  const li = rerender(p);
   applyFilters();
   counters();
+  if (s && STAGE[s].date && !rec.next) { const f = li.querySelector('.next'); if (f) f.focus(); }
+}
+function setNext(p, value) {
+  const r = S.st[p];
+  if (!r) return;
+  if (value) r.next = value; else delete r.next;
+  r.upd = Date.now();
+  save();
+  pin.add(p);
+  rerender(p);
+  applyFilters();
+  counters();
+}
+function quickDay(p, days) {
+  if (days === '') { setNext(p, ''); return; }
+  const r = S.st[p] || {};
+  const d = new Date();
+  d.setDate(d.getDate() + Number(days));
+  // время берём из уже назначенного; иначе 10:00, а для «сегодня» — ближайший час
+  const time = r.next ? r.next.slice(11, 16) : (Number(days) === 0 ? pad(Math.min(new Date().getHours() + 1, 23)) + ':00' : '10:00');
+  setNext(p, d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + time);
+}
+function unpin() { pin.clear(); }
+
+// копия отметок: файл для переноса между устройствами и на случай очистки браузера
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: type }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const stamp = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+function exportCopy() {
+  download('wa-ochered-' + stamp() + '.json', JSON.stringify({ app: 'wa-queue', v: 2, exported: new Date().toISOString(), st: S.st, fact: S.fact, ovr: S.ovr }), 'application/json');
+  $('data-note').textContent = 'Копия скачана: отметок в ней ' + Object.keys(S.st).length + '.';
+}
+function importCopy(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let d;
+    try { d = JSON.parse(reader.result); } catch (e) { d = null; }
+    if (!d || d.app !== 'wa-queue' || typeof d.st !== 'object' || !d.st) { $('data-note').textContent = 'Это не файл копии с этой страницы: ничего не изменено.'; return; }
+    let taken = 0;
+    Object.keys(d.st).forEach((p) => {
+      const inc = d.st[p], cur = S.st[p];
+      if (!byPhone.has(p) || !inc || typeof inc !== 'object') return;
+      // по одному и тому же лиду остаётся более свежая отметка
+      if (!cur || (inc.upd || inc.sentAt || 0) > (cur.upd || cur.sentAt || 0)) { S.st[p] = inc; taken++; }
+    });
+    ['fact', 'ovr'].forEach((k) => { Object.keys(d[k] || {}).forEach((p) => { if (byPhone.has(p) && S[k][p] === undefined && typeof d[k][p] === 'string') S[k][p] = d[k][p]; }); });
+    save();
+    $('queue').innerHTML = LEADS.map(rowHtml).join('');
+    sorted = false; unpin();
+    refreshAll(); applyFilters(); counters();
+    $('data-note').textContent = 'Загружено. Отметок в файле: ' + Object.keys(d.st).length + ', из них новее здешних: ' + taken + '.';
+  };
+  reader.readAsText(file);
+}
+function exportCsv() {
+  const cell = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const when = (t) => (t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+  const out = [['Этап', 'Название', 'Город', 'Регион', 'Телефон', 'Следующий контакт', 'Заметка', 'Написал', 'Сайт', 'Пачка'].map(cell).join(';')];
+  LEADS.filter((l) => statusOf(l.p)).sort((a, b) => sortKey(a.p) - sortKey(b.p)).forEach((l) => {
+    const r = S.st[l.p];
+    out.push([STAGE[r.s].label, l.n, l.city, l.reg, '+' + l.p, r.next ? when(r.next) : '', r.note || '', when(r.sentAt), l.s, l.b].map(cell).join(';'));
+  });
+  if (out.length === 1) { $('data-note').textContent = 'В воронке пока никого: выгружать нечего.'; return; }
+  download('voronka-' + stamp() + '.csv', '\ufeff' + out.join('\r\n'), 'text/csv;charset=utf-8');
+  $('data-note').textContent = 'Таблица скачана: строк ' + (out.length - 1) + '. Открывается в Excel и Google Таблицах.';
 }
 function flash(btn, text) {
   const old = btn.textContent;
@@ -446,6 +729,8 @@ function start() {
   $('set-target-' + (S.target === 'web' ? 'web' : 'wa')).checked = true;
   $('set-optout').checked = !!S.optout;
   if (S.batch !== 1 && S.batch !== 2) S.batch = 1;
+  if (S.mode !== 'crm') S.mode = 'send';
+  if (!document.querySelector('#ctabs [data-tab="' + S.ctab + '"]')) S.ctab = 'today';
   const regions = Array.from(new Set(LEADS.filter((l) => l.b === 2).map((l) => l.reg))).sort();
   $('set-region').innerHTML = '<option value="">Все регионы</option>' + regions.map((r) => '<option value="' + esc(r) + '">' + esc(r) + '</option>').join('');
   $('set-region').value = regions.includes(S.region) ? S.region : '';
@@ -459,24 +744,42 @@ function start() {
     else if (t.name === 'demo') S.demo = t.value === '1';
     else if (t.name === 'target') S.target = t.value;
     else if (t.id === 'set-optout') S.optout = t.checked;
-    save(); refreshAll(); counters();
+    save();
+    if (t.name === 'target') rows().forEach((li) => { const a = li.querySelector('.crm .btn.primary'); if (a) a.href = chatOnly(li.dataset.p); });
+    refreshAll(); counters();
   });
   $('batches').addEventListener('click', (e) => {
     const b = e.target.closest('.batch');
     if (!b) return;
-    S.batch = Number(b.dataset.batch); save(); applyFilters(); counters();
+    S.batch = Number(b.dataset.batch); save(); unpin(); applyFilters(); counters();
   });
-  $('set-region').addEventListener('change', (e) => { S.region = e.target.value; save(); applyFilters(); });
+  $('set-region').addEventListener('change', (e) => { S.region = e.target.value; save(); unpin(); applyFilters(); });
+  $('modes').addEventListener('click', (e) => {
+    const b = e.target.closest('.mode');
+    if (!b) return;
+    S.mode = b.dataset.mode; save(); unpin(); applyFilters();
+  });
+  $('due-link').addEventListener('click', () => { S.mode = 'crm'; S.ctab = 'today'; save(); unpin(); applyFilters(); $('modes').scrollIntoView({ block: 'start' }); });
   $('tabs').addEventListener('click', (e) => {
     const b = e.target.closest('.tab');
     if (!b) return;
-    S.tab = b.dataset.tab; save(); applyFilters();
+    S.tab = b.dataset.tab; save(); unpin(); applyFilters();
   });
+  $('ctabs').addEventListener('click', (e) => {
+    const b = e.target.closest('.tab');
+    if (!b) return;
+    S.ctab = b.dataset.tab; save(); unpin(); applyFilters();
+  });
+  $('q').addEventListener('input', (e) => { Q = e.target.value.trim().toLowerCase(); unpin(); applyFilters(); });
   $('flags').addEventListener('click', (e) => {
     const b = e.target.closest('.flag');
     if (!b) return;
-    S[b.dataset.flag] = !S[b.dataset.flag]; save(); applyFilters();
+    S[b.dataset.flag] = !S[b.dataset.flag]; save(); unpin(); applyFilters();
   });
+  $('data-export').addEventListener('click', exportCopy);
+  $('data-csv').addEventListener('click', exportCsv);
+  $('data-import').addEventListener('click', () => $('data-file').click());
+  $('data-file').addEventListener('change', (e) => { if (e.target.files[0]) importCopy(e.target.files[0]); e.target.value = ''; });
   $('queue').addEventListener('click', (e) => {
     const li = e.target.closest('.lead');
     if (!li) return;
@@ -487,16 +790,24 @@ function start() {
       li.querySelector('.status-label').textContent = 'Отправил? Отметь:';
       return;
     }
-    const st = e.target.closest('.st');
+    const st = e.target.closest('.st[data-st]');
     if (st) { setStatus(li.dataset.p, st.dataset.st); return; }
     const act = e.target.closest('[data-act]');
     if (!act) return;
     if (act.dataset.act === 'copy') copyText(li, act);
-    else toggleEdit(li, act);
+    else if (act.dataset.act === 'edit') toggleEdit(li, act);
+    else if (act.dataset.act === 'requeue') setStatus(li.dataset.p, '');
+    else if (act.dataset.act === 'day') quickDay(li.dataset.p, act.dataset.days);
+  });
+  $('queue').addEventListener('change', (e) => {
+    const li = e.target.closest('.lead');
+    if (li && e.target.classList.contains('next')) setNext(li.dataset.p, e.target.value);
   });
   $('queue').addEventListener('input', (e) => {
     const li = e.target.closest('.lead');
     if (!li) return;
+    if (e.target.classList.contains('note')) { const r = S.st[li.dataset.p]; if (r) { r.note = e.target.value; r.upd = Date.now(); save(); } return; }
+    if (e.target.classList.contains('next')) return;
     if (e.target.classList.contains('fact')) S.fact[li.dataset.p] = e.target.value;
     else if (e.target.classList.contains('ovr')) S.ovr[li.dataset.p] = e.target.value;
     else return;
