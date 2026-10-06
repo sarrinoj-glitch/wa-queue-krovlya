@@ -146,7 +146,47 @@ select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg
 .st[aria-pressed="true"][data-tone="warn"], .tag.stage[data-tone="warn"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
 .st[aria-pressed="true"][data-tone="stop"], .tag.stage[data-tone="stop"] { background: var(--stop-soft); border-color: var(--stop); color: var(--stop); }
 .st[aria-pressed="true"][data-tone="win"], .tag.stage[data-tone="win"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.st[aria-pressed="true"][data-tone="muted"], .tag.stage[data-tone="muted"] { background: var(--line); border-color: var(--muted); color: var(--ink); }
 .tag.stage { font-weight: 600; }
+
+/* kanban: full-bleed row of stage columns, scrolls sideways */
+.views { display: flex; gap: 6px; }
+.board {
+  width: 100vw; margin-left: calc(50% - 50vw); padding: 2px 16px 16px;
+  display: flex; gap: 10px; overflow-x: auto; align-items: flex-start; scroll-snap-type: x proximity;
+}
+.col { flex: 0 0 264px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; scroll-snap-align: start; }
+.col.over { border-color: var(--accent); background: var(--accent-soft); }
+.col-head { margin: 0 0 10px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.col-head b { font-family: var(--font-data); font-weight: 400; color: var(--muted); }
+.col-body { display: flex; flex-direction: column; gap: 8px; min-height: 48px; }
+.col-empty { margin: 0; font-size: 13px; color: var(--muted); text-align: center; padding: 12px 0; }
+.kcard {
+  font: inherit; text-align: left; cursor: pointer; color: var(--ink); width: 100%;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.kcard:hover { border-color: var(--muted); }
+.kcard.dragging { opacity: 0.45; }
+.kcard strong { font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.kmeta { font-size: 13px; color: var(--muted); }
+.knote { font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.board-hint { margin: 0; font-size: 13px; color: var(--muted); }
+.people { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.people label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.tag.mgr { border-color: var(--muted); color: var(--ink); }
+.kmgr { font-size: 12px; color: var(--muted); font-weight: 600; }
+/* у каждого менеджера свой цвет: точка на карточке, полоса слева у карточки канбана */
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--muted); vertical-align: baseline; }
+.dot[data-i="0"] { background: var(--sent); } .dot[data-i="1"] { background: var(--warn); } .dot[data-i="2"] { background: var(--accent); }
+.kcard[data-i] { border-left-width: 4px; }
+.kcard[data-i="0"] { border-left-color: var(--sent); } .kcard[data-i="1"] { border-left-color: var(--warn); } .kcard[data-i="2"] { border-left-color: var(--accent); }
+.flag b { font-family: var(--font-data); font-weight: 400; margin-left: 4px; }
+.me-hint { font-size: 13px; color: var(--warn); }
+dialog.sheet { border: 0; padding: 0; background: transparent; width: min(820px, 100vw - 16px); max-height: calc(100dvh - 24px); color: var(--ink); }
+dialog.sheet::backdrop { background: rgba(10, 16, 14, 0.55); }
+.sheet-bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.sheet-bar .btn { background: var(--surface); }
 
 /* send / funnel switch */
 .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
@@ -186,7 +226,7 @@ textarea.note { min-height: 0; max-width: 68ch; }
 <div class="wrap">
   <header>
     <h1>WhatsApp-очередь кровельщиков</h1>
-    <p class="lede"><span id="total"></span> кровельных компаний из 2ГИС в двух пачках. В «Рассылке» кнопка открывает чат с готовым текстом, отправляешь его сам. В «Воронке» лежат все, кому уже написал: этап, дата следующего контакта и заметка.</p>
+    <p class="lede"><span id="total"></span> кровельных компаний из 2ГИС в двух пачках. В «Рассылке» кнопка открывает чат с готовым текстом, отправляешь его сам. В «Воронке» лежат все, кому уже написал: канбан по этапам, дата следующего контакта и заметка. Кто молчит три дня, сам всплывает в делах на сегодня.</p>
     <p class="totals">В очереди <b id="c-queue">0</b> · написал <b id="c-sent">0</b> · ответили <b id="c-replied">0</b> · дошли до созвона <b id="c-calls">0</b> · клиентов <b id="c-won">0</b></p>
   </header>
 
@@ -255,6 +295,7 @@ textarea.note { min-height: 0; max-width: 68ch; }
     </div>
     <div class="tabs" id="ctabs" hidden>
       <button class="tab" data-tab="today" type="button">Дела на сегодня<b id="ct-today"></b></button>
+      <button class="tab" data-tab="noreply" type="button">Не ответил<b id="ct-noreply"></b></button>
       <button class="tab" data-tab="replied" type="button">Ответил<b id="ct-replied"></b></button>
       <button class="tab" data-tab="work" type="button">Доработать<b id="ct-work"></b></button>
       <button class="tab" data-tab="callback" type="button">Перезвонить<b id="ct-callback"></b></button>
@@ -263,6 +304,15 @@ textarea.note { min-height: 0; max-width: 68ch; }
       <button class="tab" data-tab="lost" type="button">Отказ<b id="ct-lost"></b></button>
       <button class="tab" data-tab="sent" type="button">Отправлено, ждём<b id="ct-sent"></b></button>
       <button class="tab" data-tab="allc" type="button">Все в воронке<b id="ct-allc"></b></button>
+    </div>
+    <div class="people">
+      <label>Я: <select id="set-me" aria-label="Кто работает на этом устройстве"></select></label>
+      <span class="me-hint" id="me-hint" hidden>Выбери себя: лиды, которые отмечаешь, будут записываться на тебя.</span>
+    </div>
+    <div class="flags" id="mgr-chips" role="group" aria-label="Чьи лиды показывать"></div>
+    <div class="views" id="views" hidden>
+      <button class="tab" data-view="board" type="button">Канбан</button>
+      <button class="tab" data-view="list" type="button">Список</button>
     </div>
     <input type="search" id="q" placeholder="Найти по названию, городу, телефону или заметке" aria-label="Поиск по лидам" autocomplete="off">
     <div class="flags" id="flags">
@@ -274,7 +324,13 @@ textarea.note { min-height: 0; max-width: 68ch; }
     </div>
   </nav>
 
+  <p class="board-hint" id="board-hint" hidden>Нажми на карточку, чтобы открыть лида. На компьютере карточки можно перетаскивать между этапами. «Не писать» в канбан не выводится: они во вкладке «Рассылка».</p>
+  <div class="board" id="board" hidden></div>
   <ol class="queue" id="queue"></ol>
+  <dialog class="sheet" id="sheet" aria-label="Карточка лида">
+    <div class="sheet-bar"><button class="btn" type="button" id="sheet-close">Закрыть</button></div>
+    <ol class="queue" id="sheet-list"></ol>
+  </dialog>
   <p class="empty" id="empty" hidden>В этом разделе пока пусто.</p>
 
   <p class="foot">Отметки хранятся в браузере на этом устройстве: на телефоне и на компьютере они разные, переносятся через «Копия отметок и выгрузка». Страница не знает, ушло ли сообщение, поэтому «Отправлено» отмечаешь сам.</p>
@@ -311,7 +367,7 @@ const PENDING = 'Сообщение появится, когда впишешь,
 
 const S = { name: '', demo: false, optout: true, target: 'wa', limit: 15, st: {}, fact: {}, ovr: {},
             tab: 'queue', batch: 1, region: '', krd: false, nosite: false, confirmed: false, notrade: false,
-            mode: 'send', ctab: 'today' };
+            mode: 'send', ctab: 'today', view: 'board', me: '', mgr: '' };
 try { const raw = localStorage.getItem(KEY); if (raw) Object.assign(S, JSON.parse(raw)); } catch (e) {}
 if (!['queue', 'sent', 'stop', 'all'].includes(S.tab)) S.tab = 'queue';   // «Ответили» переехали в воронку
 
@@ -319,6 +375,7 @@ if (!['queue', 'sent', 'stop', 'all'].includes(S.tab)) S.tab = 'queue';   // «�
 // next — следующий контакт ('ГГГГ-ММ-ДДTЧЧ:ММ'), note — заметка, hadCall — доходил до созвона, upd — последняя правка.
 const STAGES = [
   { id: 'sent',     label: 'Отправлено',  tone: 'sent' },
+  { id: 'noreply',  label: 'Не ответил',  tone: 'muted' },
   { id: 'replied',  label: 'Ответил',     tone: 'ok' },
   { id: 'work',     label: 'Доработать',  tone: 'warn' },
   { id: 'callback', label: 'Перезвонить', tone: 'warn', date: true },
@@ -328,11 +385,16 @@ const STAGES = [
   { id: 'stop',     label: 'Не писать',   tone: 'stop' }
 ];
 const STAGE = Object.fromEntries(STAGES.map((x) => [x.id, x]));
-const OPEN = ['sent', 'replied', 'work', 'callback', 'call'];                 // лид ещё в работе, ему можно назначить дату
+const OPEN = ['sent', 'noreply', 'replied', 'work', 'callback', 'call'];                 // лид ещё в работе, ему можно назначить дату
 const ANSWERED = ['replied', 'work', 'callback', 'call', 'won', 'lost'];
 const pin = new Set();   // карточки, которые остаются на экране после смены этапа, пока не сменишь вкладку
 let Q = '';
 let sorted = false;
+const MANAGERS = ['Ильяс', 'Зураб', 'Тимурлан'];   // менеджер лида лежит в записи: S.st[телефон].m
+const NOBODY = '—';                                // значение фильтра «без менеджера»
+const BOARD = ['sent', 'noreply', 'replied', 'work', 'callback', 'call', 'won', 'lost'];   // колонки канбана
+const SILENT_DAYS = 3;   // через столько дней без ответа «Отправлено» само всплывает в делах
+let sheetP = null;       // лид, открытый в окне поверх канбана
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
 const $ = (id) => document.getElementById(id);
@@ -376,7 +438,11 @@ const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).get
 const shortDate = (t) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '');
 function dueInfo(r) {
   if (!OPEN.includes(r.s)) return null;
-  if (!r.next) return STAGE[r.s].date ? { text: 'дата не указана', tone: 'warn' } : null;
+  if (!r.next) {
+    const quiet = silentDays(r);
+    if (quiet >= SILENT_DAYS) return { text: 'молчит ' + quiet + ' дн.', tone: 'warn' };
+    return STAGE[r.s].date ? { text: 'дата не указана', tone: 'warn' } : null;
+  }
   const d = new Date(r.next);
   if (isNaN(d)) return null;
   const days = Math.round((dayStart(d) - dayStart(new Date())) / 86400000);
@@ -386,8 +452,11 @@ function dueInfo(r) {
   if (days === 1) return { text: 'завтра в ' + time, tone: 'plain' };
   return { text: shortDate(d) + ' в ' + time, tone: 'plain' };
 }
+// сколько дней лид в «Отправлено» без ответа
+function silentDays(r) { return r.s === 'sent' && r.sentAt ? Math.floor((Date.now() - r.sentAt) / 86400000) : 0; }
 function isDue(p) {
   const r = S.st[p];
+  if (r && !r.next && silentDays(r) >= SILENT_DAYS) return true;
   if (!r || !r.next || !OPEN.includes(r.s)) return false;
   const d = new Date(r.next);
   return !isNaN(d) && dayStart(d) <= dayStart(new Date());
@@ -410,9 +479,13 @@ function crmHtml(lead, r) {
       (due ? '<span class="due" data-tone="' + due.tone + '">' + esc(due.text) + '</span>' : '') +
     '</div>'
   ) : '';
-  const hist = [r.sentAt ? 'написал ' + shortDate(r.sentAt) : '', r.sAt ? 'этап с ' + shortDate(r.sAt) : ''].filter(Boolean).join(' · ');
+  const hist = Array.isArray(r.h) && r.h.length
+    ? 'История: ' + r.h.map((x) => (STAGE[x[1]] ? STAGE[x[1]].label : 'в очередь') + ' ' + shortDate(x[0])).join(' → ')
+    : [r.sentAt ? 'написал ' + shortDate(r.sentAt) : '', r.sAt ? 'этап с ' + shortDate(r.sAt) : ''].filter(Boolean).join(' · ');
+  const people = MANAGERS.map((m) => '<button class="st" type="button" data-act="mgr" data-m="' + m + '" data-tone="muted" aria-pressed="' + (r.m === m) + '">' + dot(m) + m + '</button>').join('');
   return '<div class="crm">' +
     '<div class="crm-row"><span class="crm-label">Этап</span>' + chips + '</div>' +
+    '<div class="crm-row"><span class="crm-label">Менеджер</span>' + people + '</div>' +
     when +
     '<div class="crm-row"><label class="crm-label" for="note-' + lead.p + '">Заметка</label>' +
       '<textarea class="note" id="note-' + lead.p + '" rows="2" placeholder="О чём договорились, что показать, какие возражения">' + esc(r.note || '') + '</textarea></div>' +
@@ -433,6 +506,7 @@ function rowHtml(lead) {
   const due = st ? dueInfo(r) : null;
   const tags = [
     st ? '<span class="tag stage" data-tone="' + STAGE[st].tone + '">' + STAGE[st].label + (due ? ' · ' + esc(due.text) : '') + '</span>' : '',
+    st && r.m ? '<span class="tag mgr">' + dot(r.m) + esc(r.m) + '</span>' : '',
     '<span class="tag batch-tag">' + BATCH_TAG[lead.b] + '</span>',
     lead.s ? '<span class="tag">есть сайт</span>' : '<span class="tag good">без сайта</span>',
     lead.c ? '<span class="tag">WhatsApp в карточке</span>' : '<span class="tag care">мобильный, WhatsApp не подтверждён</span>',
@@ -486,9 +560,17 @@ function refreshMsg(li) {
 const rows = () => Array.from(document.querySelectorAll('.lead'));
 const refreshAll = () => rows().forEach(refreshMsg);
 
-function matches(lead) {
-  if (!Q) return true;
+const mi = (m) => MANAGERS.indexOf(m);
+const dot = (m) => '<i class="dot" data-i="' + mi(m) + '"></i>';
+// фильтр по менеджеру действует только на тех, кто уже в воронке: очередь общая
+function mgrOk(lead) {
   const r = S.st[lead.p];
+  return !(S.mgr && statusOf(lead.p) && (S.mgr === NOBODY ? !!r.m : r.m !== S.mgr));
+}
+function matches(lead) {
+  const r = S.st[lead.p];
+  if (!mgrOk(lead)) return false;
+  if (!Q) return true;
   return (lead.n + ' ' + (lead.city || '') + ' ' + lead.reg + ' ' + lead.p + ' ' + ((r && r.note) || '')).toLowerCase().includes(Q);
 }
 function visible(lead) {
@@ -515,7 +597,9 @@ function applyFilters() {
   const crm = S.mode === 'crm';
   const list = $('queue');
   const shown = [];
+  const board = crm && S.view !== 'list';
   rows().forEach((li) => {
+    if (li.dataset.p === sheetP) { li.hidden = false; return; }   // открыт в окне: не трогаем
     const ok = visible(byPhone.get(li.dataset.p).lead);
     li.hidden = !ok;
     if (ok) shown.push(li);
@@ -527,7 +611,7 @@ function applyFilters() {
     LEADS.forEach((l) => list.appendChild($('lead-' + l.p)));
     sorted = false;
   }
-  $('empty').hidden = shown.length > 0;
+  $('empty').hidden = board || shown.length > 0;
   $('empty').textContent = Q ? 'По этому запросу никого нет.'
     : !crm ? 'В этом разделе пока пусто.'
     : S.ctab === 'today' ? 'На сегодня дел нет. Сюда попадают лиды, у которых дата следующего контакта — сегодня или раньше.'
@@ -535,11 +619,17 @@ function applyFilters() {
   document.querySelectorAll('#tabs .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === S.tab)));
   document.querySelectorAll('#ctabs .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === S.ctab)));
   document.querySelectorAll('.mode').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === S.mode)));
-  document.querySelectorAll('.flag').forEach((b) => b.setAttribute('aria-pressed', String(!!S[b.dataset.flag])));
+  document.querySelectorAll('#flags .flag').forEach((b) => b.setAttribute('aria-pressed', String(!!S[b.dataset.flag])));
   document.querySelectorAll('.batch').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.batch) === S.batch)));
   $('batches').hidden = crm;
   $('tabs').hidden = crm;
-  $('ctabs').hidden = !crm;
+  $('ctabs').hidden = !crm || board;
+  $('views').hidden = !crm;
+  document.querySelectorAll('#views .tab').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.view === 'list') === !board)));
+  $('queue').hidden = board;
+  $('board').hidden = !board;
+  $('board-hint').hidden = !board;
+  if (board) renderBoard();
   $('flags').hidden = crm;
   $('flag-krd').hidden = S.batch !== 1;
   $('set-region').hidden = S.batch !== 2;
@@ -549,17 +639,20 @@ function counters() {
   const per = { 1: blank(), 2: blank() };
   const stage = {};
   STAGES.forEach((x) => { stage[x.id] = 0; });
-  let due = 0, answered = 0, calls = 0, inFunnel = 0, active = 0;
+  let due = 0, answered = 0, calls = 0, inFunnel = 0, active = 0, won = 0;
   LEADS.forEach((l) => {
     const s = statusOf(l.p);
     const r = S.st[l.p];
     per[l.b][!s ? 'queue' : s === 'stop' ? 'stop' : 'sent']++;
     per[l.b].all++;
     if (!s) return;
-    stage[s]++; inFunnel++;
-    if (isDue(l.p)) due++;
     if (ANSWERED.includes(s)) answered++;
     if (s === 'call' || r.hadCall) calls++;
+    if (s === 'won') won++;
+    if (!mgrOk(l)) return;                 // ниже — только лиды выбранного менеджера
+    stage[s]++; inFunnel++;
+    if (isDue(l.p)) due++;
+
     if (['replied', 'work', 'callback', 'call'].includes(s)) active++;
   });
   const n = per[S.batch];
@@ -576,7 +669,7 @@ function counters() {
   $('c-sent').textContent = sum('sent');
   $('c-replied').textContent = answered;
   $('c-calls').textContent = calls;
-  $('c-won').textContent = stage.won;
+  $('c-won').textContent = won;
   $('c-due').textContent = due;
   $('due-link').hidden = due === 0;
   $('m-crm').textContent = active || '';
@@ -586,8 +679,49 @@ function counters() {
   $('t-stop').textContent = n.stop;
   $('t-all').textContent = n.all;
   $('ct-today').textContent = due;
-  ['replied', 'work', 'callback', 'call', 'won', 'lost', 'sent'].forEach((k) => { $('ct-' + k).textContent = stage[k]; });
+  ['noreply', 'replied', 'work', 'callback', 'call', 'won', 'lost', 'sent'].forEach((k) => { $('ct-' + k).textContent = stage[k]; });
   $('ct-allc').textContent = inFunnel;
+  const mine = { '': 0 };
+  LEADS.forEach((l) => { if (statusOf(l.p)) { const m = S.st[l.p].m || NOBODY; mine[m] = (mine[m] || 0) + 1; mine['']++; } });
+  const chip = (v, label) => '<button class="flag" type="button" data-mgr="' + v + '" aria-pressed="' + (S.mgr === v) + '">' + label + '<b>' + (mine[v] || 0) + '</b></button>';
+  $('mgr-chips').innerHTML = chip('', 'Все') + MANAGERS.map((m) => chip(m, dot(m) + m)).join('') + chip(NOBODY, 'Без менеджера');
+  $('me-hint').hidden = !!S.me;
+}
+function kcardHtml(l) {
+  const r = S.st[l.p];
+  const due = dueInfo(r);
+  return '<button class="kcard" type="button" draggable="true" data-p="' + l.p + '"' + (r.m ? ' data-i="' + mi(r.m) + '"' : '') + '><strong>' + esc(l.n) + '</strong>' +
+    '<span class="kmeta">' + esc(l.city || l.reg) + '</span>' +
+    (due ? '<span class="due" data-tone="' + due.tone + '">' + esc(due.text) + '</span>' : '') +
+    (r.note ? '<span class="knote">' + esc(r.note) + '</span>' : '') +
+    (r.m ? '<span class="kmgr">' + esc(r.m) + '</span>' : '') + '</button>';
+}
+function renderBoard() {
+  const cols = {};
+  BOARD.forEach((k) => { cols[k] = []; });
+  LEADS.forEach((l) => { const st = statusOf(l.p); if (cols[st] && matches(l)) cols[st].push(l); });
+  $('board').innerHTML = BOARD.map((k) => {
+    const list = cols[k].sort((a, b) => sortKey(a.p) - sortKey(b.p));
+    return '<section class="col" data-col="' + k + '"><h3 class="col-head"><span class="tag stage" data-tone="' + STAGE[k].tone + '">' + STAGE[k].label + '</span><b>' + list.length + '</b></h3>' +
+      '<div class="col-body">' + (list.map(kcardHtml).join('') || '<p class="col-empty">пусто</p>') + '</div></section>';
+  }).join('');
+}
+function openSheet(p) {
+  if (sheetP) closeSheet();
+  sheetP = p;
+  const li = $('lead-' + p);
+  li.hidden = false;
+  $('sheet-list').appendChild(li);
+  if (!$('sheet').open) $('sheet').showModal();
+}
+function closeSheet() {
+  if (!sheetP) return;
+  const li = $('lead-' + sheetP);
+  sheetP = null;
+  if (li) $('queue').appendChild(li);
+  sorted = true;   // порядок в общем списке нарушен: вернётся при следующем показе
+  if ($('sheet').open) $('sheet').close();
+  unpin(); applyFilters(); counters();
 }
 function rerender(p) {
   $('lead-' + p).outerHTML = rowHtml(byPhone.get(p).lead);
@@ -600,18 +734,23 @@ function setStatus(p, s) {
   if ((cur.s || '') === s) return;
   const now = Date.now();
   const rec = Object.assign({}, cur, { s: s, sAt: now, upd: now });
+  rec.h = (Array.isArray(cur.h) ? cur.h : (cur.s && cur.sentAt ? [[cur.sentAt, cur.s]] : [])).concat([[now, s]]).slice(-12);
   if (!s) { delete rec.sentAt; delete rec.sAt; }                      // вернули в очередь: считаем, что не писали
   else if (s !== 'stop' && !rec.sentAt) rec.sentAt = now;
   if (s === 'call') rec.hadCall = true;
+  if (s && !rec.m && S.me) rec.m = S.me;                              // кто отметил, тот и ведёт
   if (!OPEN.includes(s)) delete rec.next;                             // у закрытого лида напоминаний нет
-  if (!s && !rec.note && !rec.hadCall) delete S.st[p]; else S.st[p] = rec;
+  if (!s && !rec.note && !rec.hadCall && rec.h.length < 2) delete S.st[p]; else S.st[p] = rec;
   save();
   // в рассылке отмеченный лид сразу уходит из очереди; в остальных случаях карточка остаётся, чтобы дописать дату и заметку
   if (S.mode === 'crm' || !['sent', 'stop'].includes(s)) pin.add(p);
   const li = rerender(p);
   applyFilters();
   counters();
-  if (s && STAGE[s].date && !rec.next) { const f = li.querySelector('.next'); if (f) f.focus(); }
+  if (s && STAGE[s].date && !rec.next) {
+    if (S.mode === 'crm' && S.view !== 'list' && sheetP !== p) openSheet(p);
+    const f = $('lead-' + p).querySelector('.next'); if (f) f.focus();
+  }
 }
 function setNext(p, value) {
   const r = S.st[p];
@@ -632,6 +771,17 @@ function quickDay(p, days) {
   // время берём из уже назначенного; иначе 10:00, а для «сегодня» — ближайший час
   const time = r.next ? r.next.slice(11, 16) : (Number(days) === 0 ? pad(Math.min(new Date().getHours() + 1, 23)) + ':00' : '10:00');
   setNext(p, d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + time);
+}
+function setManager(p, m) {
+  const r = S.st[p];
+  if (!r) return;
+  if (r.m === m) delete r.m; else r.m = m;
+  r.upd = Date.now();
+  save();
+  pin.add(p);
+  rerender(p);
+  applyFilters();
+  counters();
 }
 function unpin() { pin.clear(); }
 
@@ -663,6 +813,7 @@ function importCopy(file) {
     });
     ['fact', 'ovr'].forEach((k) => { Object.keys(d[k] || {}).forEach((p) => { if (byPhone.has(p) && S[k][p] === undefined && typeof d[k][p] === 'string') S[k][p] = d[k][p]; }); });
     save();
+    if (sheetP) closeSheet();
     $('queue').innerHTML = LEADS.map(rowHtml).join('');
     sorted = false; unpin();
     refreshAll(); applyFilters(); counters();
@@ -673,10 +824,10 @@ function importCopy(file) {
 function exportCsv() {
   const cell = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const when = (t) => (t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
-  const out = [['Этап', 'Название', 'Город', 'Регион', 'Телефон', 'Следующий контакт', 'Заметка', 'Написал', 'Сайт', 'Пачка'].map(cell).join(';')];
+  const out = [['Этап', 'Менеджер', 'Название', 'Город', 'Регион', 'Телефон', 'Следующий контакт', 'Заметка', 'Написал', 'Сайт', 'Пачка'].map(cell).join(';')];
   LEADS.filter((l) => statusOf(l.p)).sort((a, b) => sortKey(a.p) - sortKey(b.p)).forEach((l) => {
     const r = S.st[l.p];
-    out.push([STAGE[r.s].label, l.n, l.city, l.reg, '+' + l.p, r.next ? when(r.next) : '', r.note || '', when(r.sentAt), l.s, l.b].map(cell).join(';'));
+    out.push([STAGE[r.s].label, r.m || '', l.n, l.city, l.reg, '+' + l.p, r.next ? when(r.next) : '', r.note || '', when(r.sentAt), l.s, l.b].map(cell).join(';'));
   });
   if (out.length === 1) { $('data-note').textContent = 'В воронке пока никого: выгружать нечего.'; return; }
   download('voronka-' + stamp() + '.csv', '\ufeff' + out.join('\r\n'), 'text/csv;charset=utf-8');
@@ -730,11 +881,19 @@ function start() {
   $('set-optout').checked = !!S.optout;
   if (S.batch !== 1 && S.batch !== 2) S.batch = 1;
   if (S.mode !== 'crm') S.mode = 'send';
-  if (!document.querySelector('#ctabs [data-tab="' + S.ctab + '"]')) S.ctab = 'today';
-  const regions = Array.from(new Set(LEADS.filter((l) => l.b === 2).map((l) => l.reg))).sort();
-  $('set-region').innerHTML = '<option value="">Все регионы</option>' + regions.map((r) => '<option value="' + esc(r) + '">' + esc(r) + '</option>').join('');
-  $('set-region').value = regions.includes(S.region) ? S.region : '';
-  if (!S.name.trim()) $('settings').open = true;
+  if (S.view !== 'list') S.view = 'board';
+  if (!MANAGERS.includes(S.me)) S.me = '';
+  if (S.mgr !== NOBODY && !MANAGERS.includes(S.mgr)) S.mgr = '';
+  const opts = MANAGERS.map((m) => '<option value="' + m + '">' + m + '</option>').join('');
+  $('set-me').innerHTML = '<option value="">не выбран</option>' + opts;
+  $('set-me').value = S.me;
+  // выбрал себя — сразу показываем свои лиды
+  $('set-me').addEventListener('change', (e) => { S.me = e.target.value; S.mgr = S.me; save(); unpin(); applyFilters(); counters(); });
+  $('mgr-chips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mgr]');
+    if (!b) return;
+    S.mgr = b.dataset.mgr; save(); unpin(); applyFilters(); counters();
+  });
   refreshAll(); applyFilters(); counters();
 
   $('settings').addEventListener('input', (e) => {
@@ -776,11 +935,25 @@ function start() {
     if (!b) return;
     S[b.dataset.flag] = !S[b.dataset.flag]; save(); unpin(); applyFilters();
   });
+  $('views').addEventListener('click', (e) => {
+    const b = e.target.closest('.tab');
+    if (!b) return;
+    S.view = b.dataset.view; save(); unpin(); applyFilters();
+  });
+  const boardEl = $('board');
+  boardEl.addEventListener('click', (e) => { const c = e.target.closest('.kcard'); if (c) openSheet(c.dataset.p); });
+  boardEl.addEventListener('dragstart', (e) => { const c = e.target.closest('.kcard'); if (!c) return; e.dataTransfer.setData('text/plain', c.dataset.p); e.dataTransfer.effectAllowed = 'move'; c.classList.add('dragging'); });
+  boardEl.addEventListener('dragend', () => boardEl.querySelectorAll('.dragging, .over').forEach((x) => x.classList.remove('dragging', 'over')));
+  boardEl.addEventListener('dragover', (e) => { const col = e.target.closest('.col'); if (!col) return; e.preventDefault(); boardEl.querySelectorAll('.over').forEach((x) => { if (x !== col) x.classList.remove('over'); }); col.classList.add('over'); });
+  boardEl.addEventListener('drop', (e) => { const col = e.target.closest('.col'); const p = e.dataTransfer.getData('text/plain'); if (!col || !byPhone.has(p)) return; e.preventDefault(); setStatus(p, col.dataset.col); });
+  $('sheet-close').addEventListener('click', closeSheet);
+  $('sheet').addEventListener('close', closeSheet);
+  $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) closeSheet(); });
   $('data-export').addEventListener('click', exportCopy);
   $('data-csv').addEventListener('click', exportCsv);
   $('data-import').addEventListener('click', () => $('data-file').click());
   $('data-file').addEventListener('change', (e) => { if (e.target.files[0]) importCopy(e.target.files[0]); e.target.value = ''; });
-  $('queue').addEventListener('click', (e) => {
+  document.addEventListener('click', (e) => {
     const li = e.target.closest('.lead');
     if (!li) return;
     const open = e.target.closest('.open');
@@ -798,12 +971,13 @@ function start() {
     else if (act.dataset.act === 'edit') toggleEdit(li, act);
     else if (act.dataset.act === 'requeue') setStatus(li.dataset.p, '');
     else if (act.dataset.act === 'day') quickDay(li.dataset.p, act.dataset.days);
+    else if (act.dataset.act === 'mgr') setManager(li.dataset.p, act.dataset.m);
   });
-  $('queue').addEventListener('change', (e) => {
+  document.addEventListener('change', (e) => {
     const li = e.target.closest('.lead');
     if (li && e.target.classList.contains('next')) setNext(li.dataset.p, e.target.value);
   });
-  $('queue').addEventListener('input', (e) => {
+  document.addEventListener('input', (e) => {
     const li = e.target.closest('.lead');
     if (!li) return;
     if (e.target.classList.contains('note')) { const r = S.st[li.dataset.p]; if (r) { r.note = e.target.value; r.upd = Date.now(); save(); } return; }
